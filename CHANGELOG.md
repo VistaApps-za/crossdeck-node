@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.1] — 2026-07-23
+
+- **Reliability telemetry re-pointed to the live project.** The internal `crossdeck.contract_failed` self-check channel used a retired reliability-workspace key that had begun returning `401 invalid_api_key`, silently dropping failures; it now targets the live "Crossdeck Health Check" project. Internal SDK-health only — never touches your dashboard or your app. (No API changes; the anonymous-`reset()` hardening in the other SDKs does not apply — the Node SDK has no persistent device identity to churn.)
+
 ## [1.12.0] — 2026-07-01
 
 **Added — `blockEventId`: the Crossdeck-hosted block page (v2 preview).**

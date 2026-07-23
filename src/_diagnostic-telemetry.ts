@@ -46,10 +46,10 @@ export const DIAGNOSTIC_TELEMETRY_ENDPOINT =
 
 /** Reliability project's publishable key. Hardcoded constant.
  *  Provisioned 2026-05-27 — Crossdeck reliability workspace
- *  (app_web_92b2d6a5728a4d). Every customer SDK's contract_failed
+ *  (app_web_ea3dc71f61af4b). Every customer SDK's contract_failed
  *  events route here for Crossdeck-on-Crossdeck observability. */
 export const DIAGNOSTIC_TELEMETRY_PUBLISHABLE_KEY =
-  "cd_pub_live_9490e7aa029c432abf";
+  "cd_pub_live_eea2f84dbb834a45b7";
 
 /**
  * Whether the telemetry is enabled. Disabled while the reliability

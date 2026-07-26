@@ -958,6 +958,10 @@ export class CrossdeckServer extends EventEmitter {
           ...(input.ip ? { ip: input.ip } : {}),
           ...(input.domain ? { domain: input.domain } : {}),
           ...(input.fingerprint ? { fingerprint: input.fingerprint } : {}),
+          // The human-proof attestation from the Crossdeck Trust browser panel.
+          // Verified server-side at the gate; its absence is scored, never a hard
+          // block on its own (fail-open). Only sent when the client supplied one.
+          ...(input.token ? { challengeToken: input.token } : {}),
         },
         signal: options?.signal,
         timeoutMs: options?.timeoutMs,

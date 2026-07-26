@@ -153,6 +153,15 @@ export interface GateInput {
   domain?: string;
   /** Optional device fingerprint — sharpens the composite signup score. */
   fingerprint?: string;
+  /**
+   * The human-proof attestation minted by the Crossdeck Trust panel in the browser
+   * (`Crossdeck.trust.panel(...)` / `<CrossdeckTrust>` in @cross-deck/web). Forward
+   * whatever the client delivered. A real browser carries one; a server-to-server
+   * bot has none — that absence is scored, and in strict mode (`requireHumanProof`)
+   * a tokenless + suspicious attempt is the confident block. Optional and fail-open:
+   * omitting it never blocks on its own.
+   */
+  token?: string;
 }
 
 /**

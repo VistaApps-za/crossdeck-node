@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] — 2026-07-26
+
+- **Crossdeck Trust — the gate now carries the browser's human-proof token.** `GateInput` gains an optional `token`: pass the attestation minted by the Crossdeck Trust panel in the browser (`Crossdeck.trust.panel(...)` / `<CrossdeckTrust>` in `@cross-deck/web`) and `gate()` forwards it as `challengeToken` to `/v1/trust/gate`, completing the SDK-native round trip. A real browser carries one; a server-to-server bot has none — that absence is scored, and in strict mode (`requireHumanProof`) a tokenless + suspicious attempt is the confident block. Optional and fail-open: omitting it never blocks on its own, and `gate()` remains fail-open by contract (a glitch returns `{ action: "allow", degraded: true }`, never a throw or a false block).
+
 ## [1.12.1] — 2026-07-23
 
 - **Reliability telemetry re-pointed to the live project.** The internal `crossdeck.contract_failed` self-check channel used a retired reliability-workspace key that had begun returning `401 invalid_api_key`, silently dropping failures; it now targets the live "Crossdeck Health Check" project. Internal SDK-health only — never touches your dashboard or your app. (No API changes; the anonymous-`reset()` hardening in the other SDKs does not apply — the Node SDK has no persistent device identity to churn.)

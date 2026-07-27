@@ -64,6 +64,8 @@ export type {
   AuditDecision,
   AuditEntry,
   BlockVerdict,
+  CampaignLinkInput,
+  CampaignLinkResult,
   CrossdeckServerOptions,
   Diagnostics,
   EntitlementMutationResult,

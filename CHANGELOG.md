@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] — 2026-07-27
+
+- **`campaignLink()` — stamp an outbound email link so its click binds to the recipient's identity on landing.** You know the recipient's email at send time; pass it with the link's destination and Crossdeck returns the same URL carrying a one-time arrival ticket (`cd_ref`). Put the returned URL in the email (Resend, HubSpot, your own SMTP — any tool). When the recipient clicks and lands on a page running `@cross-deck/web`, the SDK reads the ticket automatically (v1.10.0+) and binds that session to the person, so the post-click journey joins their identity. Server-side only — it mints an identity bind, so it requires a secret key. Degrades honestly: without the web SDK on the landing page the deep session stitch softens, but the server-side email funnel still lands by identity. Wraps `POST /v1/campaign/email-link`.
+
 ## [1.13.0] — 2026-07-26
 
 - **Crossdeck Trust — the gate now carries the browser's human-proof token.** `GateInput` gains an optional `token`: pass the attestation minted by the Crossdeck Trust panel in the browser (`Crossdeck.trust.panel(...)` / `<CrossdeckTrust>` in `@cross-deck/web`) and `gate()` forwards it as `challengeToken` to `/v1/trust/gate`, completing the SDK-native round trip. A real browser carries one; a server-to-server bot has none — that absence is scored, and in strict mode (`requireHumanProof`) a tokenless + suspicious attempt is the confident block. Optional and fail-open: omitting it never blocks on its own, and `gate()` remains fail-open by contract (a glitch returns `{ action: "allow", degraded: true }`, never a throw or a false block).

@@ -68,6 +68,8 @@ import type {
   AuditEntry,
   AuditEntryResponse,
   BlockVerdict,
+  CampaignLinkInput,
+  CampaignLinkResult,
   CrossdeckServerOptions,
   Diagnostics,
   EntitlementMutationResult,
@@ -618,6 +620,48 @@ export class CrossdeckServer extends EventEmitter {
   async forget(hints: IdentityHints, options?: RequestOptions): Promise<ForgetResult> {
     const body = this.identityPayload(hints);
     return this.http.request<ForgetResult>("POST", "/identity/forget", {
+      body,
+      signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
+    });
+  }
+
+  /**
+   * Stamp an outbound email link so its click binds to the recipient on landing.
+   *
+   * You know the recipient's email at send time; pass it with the link's destination
+   * and Crossdeck returns the same URL carrying a one-time arrival ticket (`cd_ref`).
+   * Put the returned URL in the email. When the recipient clicks and lands on a page
+   * running `@cross-deck/web`, the SDK reads the ticket automatically and binds that
+   * session to the person — the post-click journey then joins their identity.
+   *
+   * Rail-agnostic: works for Resend, HubSpot, your own SMTP, anything. Server-side
+   * only (it mints an identity bind, so a secret key is required). If the landing page
+   * has no Crossdeck web SDK, the deep session stitch softens but the server-side
+   * email funnel (via the rail adapter) still lands by identity.
+   */
+  async campaignLink(
+    input: CampaignLinkInput,
+    options?: RequestOptions,
+  ): Promise<CampaignLinkResult> {
+    if (!input.email) {
+      throw new CrossdeckError({
+        type: "invalid_request_error",
+        code: "missing_email",
+        message: "campaignLink requires the recipient's email.",
+      });
+    }
+    if (!input.url) {
+      throw new CrossdeckError({
+        type: "invalid_request_error",
+        code: "missing_url",
+        message: "campaignLink requires the link's destination url.",
+      });
+    }
+    const body: Record<string, unknown> = { email: input.email, url: input.url };
+    if (input.rail) body.rail = input.rail;
+
+    return this.http.request<CampaignLinkResult>("POST", "/campaign/email-link", {
       body,
       signal: options?.signal,
       timeoutMs: options?.timeoutMs,

@@ -260,6 +260,27 @@ export interface AliasResult {
   env: Environment;
 }
 
+/** Input to `campaignLink` — stamp an outbound email link with an identity-bind ticket. */
+export interface CampaignLinkInput {
+  /** The recipient's email address. The person is resolved from it once, at stamp time.
+   *  Rides the request body only — never a URL/query (it is PII). */
+  email: string;
+  /** The absolute http(s) destination the recipient should land on. */
+  url: string;
+  /** Optional provenance for later enrichment (e.g. "resend", "hubspot"). Never required. */
+  rail?: string;
+}
+
+/** Result of `campaignLink` — the same destination with the arrival ticket appended. */
+export interface CampaignLinkResult {
+  object: "campaign_link";
+  /** The stamped URL to put in the email. Carries only an opaque `cd_ref` ticket. */
+  url: string;
+  /** How long the ticket stays live (a campaign's useful life). */
+  expiresInDays: number;
+  env: Environment;
+}
+
 export interface IngestResponse {
   object: "list";
   received: number;

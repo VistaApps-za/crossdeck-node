@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { CrossdeckError } from "../src/errors";
-import { signWebhookPayload, verifyWebhookSignature } from "../src/webhooks";
+import {
+  signWebhookPayload,
+  verifyWebhookSignature,
+  constructEvent,
+  webhooks,
+} from "../src/webhooks";
 
 const SECRET = "whsec_test_001";
 /** Fixed reference time so timestamp assertions are deterministic. */
@@ -246,5 +251,65 @@ describe("signWebhookPayload (exported for fixture authors)", () => {
     const a = signWebhookPayload('{"x":1}', SECRET, 1_700_000_000);
     const b = signWebhookPayload('{"x":2}', SECRET, 1_700_000_000);
     expect(a).not.toBe(b);
+  });
+});
+
+describe("webhooks.constructEvent — Stripe-exact typed API (CD-145)", () => {
+  const ENVELOPE = {
+    id: "evt_abc123",
+    object: "event" as const,
+    type: "trust.rule.added",
+    api_version: "2026-07-01",
+    created: Math.floor(NOW / 1000),
+    livemode: true,
+    data: { ruleId: "rul_1" },
+    reconcile: { method: "GET", url: "https://api.cross-deck.com/v1/trust/blocklist" },
+  };
+  const BODY = JSON.stringify(ENVELOPE);
+
+  it("returns the parsed, typed envelope on a valid signature", () => {
+    const header = makeHeader(BODY, SECRET, NOW);
+    const event = constructEvent(BODY, header, SECRET, { now: () => NOW });
+    expect(event).toEqual(ENVELOPE);
+    // Typed access compiles + resolves at runtime:
+    expect(event.type).toBe("trust.rule.added");
+    expect(event.id).toBe("evt_abc123");
+    expect(event.reconcile.url).toContain("/v1/trust/blocklist");
+    expect(event.livemode).toBe(true);
+  });
+
+  it("throws on a tampered body (signature mismatch) — never returns a value", () => {
+    const header = makeHeader(BODY, SECRET, NOW);
+    const tampered = BODY.replace("rul_1", "rul_HACKED");
+    try {
+      constructEvent(tampered, header, SECRET, { now: () => NOW });
+      throw new Error("expected throw");
+    } catch (err) {
+      expect(err).toBeInstanceOf(CrossdeckError);
+      expect((err as CrossdeckError).code).toBe("webhook_signature_mismatch");
+    }
+  });
+
+  it("throws on a replayed (stale) timestamp", () => {
+    const stale = NOW - 10 * 60 * 1000; // 10 min old, past the 5 min window
+    const header = makeHeader(BODY, SECRET, stale);
+    try {
+      constructEvent(BODY, header, SECRET, { now: () => NOW });
+      throw new Error("expected throw");
+    } catch (err) {
+      expect((err as CrossdeckError).code).toBe("webhook_timestamp_outside_tolerance");
+    }
+  });
+
+  it("accepts a rotated secret array (any match)", () => {
+    const header = makeHeader(BODY, SECRET, NOW);
+    const event = constructEvent(BODY, header, ["whsec_old", SECRET], { now: () => NOW });
+    expect(event.type).toBe("trust.rule.added");
+  });
+
+  it("the webhooks namespace exposes the three pure helpers, mount-agnostic", () => {
+    expect(webhooks.constructEvent).toBe(constructEvent);
+    expect(webhooks.verifyWebhookSignature).toBe(verifyWebhookSignature);
+    expect(webhooks.signWebhookPayload).toBe(signWebhookPayload);
   });
 });

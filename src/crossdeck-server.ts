@@ -58,6 +58,7 @@ import { buildEventContext, collectRuntimeInfo, runtimeInfoToProperties, type Ru
 import { FlushOnExit } from "./flush-on-exit";
 import { SuperPropertyStore, type GroupMembership } from "./super-properties";
 import { EntitlementCache, type EntitlementsListener } from "./entitlement-cache";
+import { webhooks as webhooksNamespace } from "./webhooks";
 import { scrubPiiFromProperties } from "./consent";
 import { deriveIdempotencyKeyForPurchase } from "./idempotency-key";
 import { ConsoleDebugLogger, NullDebugLogger, findSensitivePropertyKeys, type DebugLogger } from "./debug";
@@ -132,6 +133,13 @@ export class CrossdeckServer extends EventEmitter {
   // but the singleton guard in the constructor can `return` an existing instance
   // before reaching them — that early return is the only path that skips them.
   private readonly http!: HttpClient;
+  /**
+   * Stripe-shaped webhook namespace — `crossdeck.webhooks.constructEvent(...)`.
+   * Pure functions (no client state), so it's the same object as the standalone
+   * `webhooks` export; mounted here for the Stripe-parity call site. Assigned as
+   * a field initialiser so it's present even on the singleton-guard early return.
+   */
+  public readonly webhooks = webhooksNamespace;
   private readonly sdkVersion: string;
   private readonly baseUrl: string;
   private readonly appId: string | undefined;

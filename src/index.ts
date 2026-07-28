@@ -46,7 +46,12 @@ export {
   CROSSDECK_API_VERSION,
 } from "./http";
 export { CROSSDECK_ERROR_CODES, getErrorCode, isCrossdeckErrorCode } from "./error-codes";
-export { verifyWebhookSignature, signWebhookPayload } from "./webhooks";
+export {
+  verifyWebhookSignature,
+  signWebhookPayload,
+  constructEvent,
+  webhooks,
+} from "./webhooks";
 export { scrubPii, scrubPiiFromProperties } from "./consent";
 export { CrossdeckContracts } from "./contracts";
 export type {
@@ -105,4 +110,4 @@ export type { RuntimeHost, RuntimeInfo } from "./runtime-info";
 export type { GroupMembership } from "./super-properties";
 export type { EntitlementsListener, EntitlementCacheOptions } from "./entitlement-cache";
 export type { DebugSignal, DebugLogger, DebugContext } from "./debug";
-export type { VerifyWebhookOptions } from "./webhooks";
+export type { VerifyWebhookOptions, WebhookEvent, WebhookEventType } from "./webhooks";

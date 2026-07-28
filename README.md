@@ -185,31 +185,33 @@ await crossdeck.revokeEntitlement({
 });
 ```
 
-#### Webhook signature verification
+#### Receiving webhooks — `webhooks.constructEvent()`
 
-Stripe-compatible HMAC-SHA256 with constant-time comparison + replay window. Supports multi-secret rotation.
+Crossdeck sends signed, retried, at-least-once outbound webhooks to endpoints you register (`trust.rule.added` / `trust.rule.removed` today; more ride the same spine). Verify each one in one line — Stripe-compatible HMAC-SHA256, constant-time comparison, mandatory replay window, multi-secret rotation. `constructEvent` returns the **typed** `WebhookEvent` envelope; a throw means "do not act."
 
 ```ts
-import { verifyWebhookSignature } from "@cross-deck/node";
+import { webhooks } from "@cross-deck/node";
 import express from "express";
 
-app.post("/crossdeck-webhook", express.raw({ type: "application/json" }), (req, res) => {
+app.post("/crossdeck-webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  let event;
   try {
-    const event = verifyWebhookSignature(
-      req.body.toString("utf8"),
+    event = webhooks.constructEvent(
+      req.body.toString("utf8"),                 // the RAW bytes, unparsed
       req.headers["crossdeck-signature"],
       [process.env.CROSSDECK_WEBHOOK_SECRET, process.env.CROSSDECK_WEBHOOK_SECRET_OLD],
-      // 5-min default replay window
     );
-    handleCrossdeckEvent(event);
-    res.sendStatus(200);
   } catch (err) {
-    res.sendStatus(401);
+    return res.sendStatus(401);                  // bad signature / replay — reject
   }
+
+  res.sendStatus(200);                           // ACK fast, then reconcile out of band:
+  const truth = await fetch(event.reconcile.url).then((r) => r.json());
+  enforceFrom(truth);                            // a webhook is a NUDGE — read the truth it points at
 });
 ```
 
-For test fixtures that need to mint signed webhooks against the same scheme, `signWebhookPayload(payload, secret, timestampSec)` is exported.
+`crossdeck.webhooks.constructEvent(...)` is the same function mounted on the client. The lower-level `verifyWebhookSignature()` (returns the parsed body as `unknown`) and `signWebhookPayload(payload, secret, timestampSec)` (mint signed bodies for test fixtures) are also exported. Full reference: [Receiving Crossdeck webhooks](https://cross-deck.com/docs/webhooks-receive/).
 
 ### Blocking (Crossdeck Trust) — <sup>v2 preview</sup>
 

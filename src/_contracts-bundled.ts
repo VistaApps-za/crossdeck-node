@@ -5,8 +5,8 @@
 
 import type { Contract } from "./contracts";
 
-export const BUNDLED_IN = "@cross-deck/node@1.12.0" as const;
-export const SDK_VERSION = "1.12.0" as const;
+export const BUNDLED_IN = "@cross-deck/node@1.15.0" as const;
+export const SDK_VERSION = "1.15.0" as const;
 
 export const BUNDLED_CONTRACTS: readonly Contract[] = Object.freeze([
   {
@@ -129,39 +129,40 @@ export const BUNDLED_CONTRACTS: readonly Contract[] = Object.freeze([
       "legal/security/index.html#diagnostic",
       "legal/sdk-data/index.html#b-diagnostic"
     ],
-    "bundledIn": "@cross-deck/node@1.12.0"
+    "bundledIn": "@cross-deck/node@1.15.0"
   },
   {
     "id": "documentation-honesty",
     "pillar": "webhooks",
     "status": "enforced",
-    "claim": "Customer-facing documentation honestly tags outbound webhook delivery as ROADMAP (no signer, no worker, no scheduler in backend/src yet). The Node verifier helper exists today for fixture authoring + locking the validation contract surface BEFORE delivery ships — its jsdoc carries an explicit `[ROADMAP]` disclaimer so a developer reading the source doesn't assume Crossdeck sends webhooks today. The rail-webhooks doc no longer claims state surfaces 'through the dashboard, SDKs, and outbound webhooks' — outbound is gated to the explicit roadmap section.",
+    "claim": "Customer-facing documentation and the Node SDK honestly describe outbound webhook delivery as LIVE. The outbound-event spine (registration + Secret Manager secret custody + canonical envelope + HMAC signer + at-least-once delivery/retry + SSRF guard + dead-letter) ships in backend/src/lib/webhook-backbone.ts with a scheduled drainer; the live event types are trust.rule.added / trust.rule.removed, and new types ride the same spine as thin riders. Nudge philosophy is stated everywhere: the payload carries the changed key plus a reconcile pointer, and GET-ing the reconcile URL is the source of truth — the webhook is a signal, never the truth. The Node SDK ships webhooks.constructEvent() (returns the typed WebhookEvent envelope) and verifyWebhookSignature() (returns the parsed body) for inbound verification; neither the SDK jsdoc nor the docs still claim outbound delivery is roadmap.",
     "appliesTo": [
       "node",
       "backend"
     ],
     "codeRef": [
       "sdks/node/src/webhooks.ts",
+      "backend/src/lib/webhook-backbone.ts",
       "docs/rail-webhooks/index.html",
       "docs/webhooks-receive/index.html"
     ],
     "testRef": [
       {
         "file": "sdks/node/src/webhooks.ts",
-        "name": "[ROADMAP — v1.4.0 honesty note]"
+        "name": "Crossdeck sends outbound webhooks"
       },
       {
         "file": "docs/rail-webhooks/index.html",
-        "name": "Outbound push-to-your-backend webhooks are <strong>roadmap</strong>"
+        "name": "Outbound webhooks are live"
       },
       {
         "file": "docs/webhooks-receive/index.html",
-        "name": "This feature is on the roadmap"
+        "name": "webhooks.constructEvent"
       }
     ],
     "registeredAt": "2026-05-26",
-    "firstRegisteredIn": "bank-grade reconciliation v1.4.0 — phase 7.1",
-    "bundledIn": "@cross-deck/node@1.12.0"
+    "firstRegisteredIn": "bank-grade reconciliation v1.4.0 — phase 7.1; flipped ROADMAP → LIVE 2026-07-28 (CD-141 spine + CD-143 rider shipped)",
+    "bundledIn": "@cross-deck/node@1.15.0"
   },
   {
     "id": "error-envelope-shape",
@@ -200,7 +201,7 @@ export const BUNDLED_CONTRACTS: readonly Contract[] = Object.freeze([
     ],
     "registeredAt": "2026-05-26",
     "firstRegisteredIn": "bank-grade reconciliation v1.4.0 — phase 8 (codifies existing contract)",
-    "bundledIn": "@cross-deck/node@1.12.0"
+    "bundledIn": "@cross-deck/node@1.15.0"
   },
   {
     "id": "flush-interval-parity",
@@ -245,7 +246,7 @@ export const BUNDLED_CONTRACTS: readonly Contract[] = Object.freeze([
     ],
     "registeredAt": "2026-05-26",
     "firstRegisteredIn": "bank-grade reconciliation v1.4.0 — phase 3.3",
-    "bundledIn": "@cross-deck/node@1.12.0"
+    "bundledIn": "@cross-deck/node@1.15.0"
   },
   {
     "id": "idempotency-key-deterministic",
@@ -350,7 +351,7 @@ export const BUNDLED_CONTRACTS: readonly Contract[] = Object.freeze([
     ],
     "registeredAt": "2026-05-26",
     "firstRegisteredIn": "bank-grade reconciliation v1.4.0 — phase 2.2.a + 2.2.b + 2.2.c",
-    "bundledIn": "@cross-deck/node@1.12.0"
+    "bundledIn": "@cross-deck/node@1.15.0"
   },
   {
     "id": "invalid-input-rejected-natively",
@@ -406,7 +407,7 @@ export const BUNDLED_CONTRACTS: readonly Contract[] = Object.freeze([
     ],
     "registeredAt": "2026-06-11",
     "firstRegisteredIn": "swift trap-on-input class fix — first machine-tested Swift release",
-    "bundledIn": "@cross-deck/node@1.12.0"
+    "bundledIn": "@cross-deck/node@1.15.0"
   },
   {
     "id": "node-pii-scrubber",
@@ -445,7 +446,7 @@ export const BUNDLED_CONTRACTS: readonly Contract[] = Object.freeze([
     ],
     "registeredAt": "2026-05-26",
     "firstRegisteredIn": "bank-grade reconciliation v1.4.0 — phase 3.1",
-    "bundledIn": "@cross-deck/node@1.12.0"
+    "bundledIn": "@cross-deck/node@1.15.0"
   },
   {
     "id": "node-shutdown-awaits-flush",
@@ -478,7 +479,7 @@ export const BUNDLED_CONTRACTS: readonly Contract[] = Object.freeze([
     ],
     "registeredAt": "2026-05-26",
     "firstRegisteredIn": "bank-grade reconciliation v1.4.0 — phase 5.4",
-    "bundledIn": "@cross-deck/node@1.12.0"
+    "bundledIn": "@cross-deck/node@1.15.0"
   },
   {
     "id": "sdk-error-codes-catalogue",
@@ -523,7 +524,7 @@ export const BUNDLED_CONTRACTS: readonly Contract[] = Object.freeze([
     ],
     "registeredAt": "2026-05-26",
     "firstRegisteredIn": "bank-grade reconciliation v1.4.0 — phase 6.2",
-    "bundledIn": "@cross-deck/node@1.12.0"
+    "bundledIn": "@cross-deck/node@1.15.0"
   },
   {
     "id": "sync-purchases-funnel-parity",
@@ -556,7 +557,7 @@ export const BUNDLED_CONTRACTS: readonly Contract[] = Object.freeze([
     ],
     "registeredAt": "2026-05-26",
     "firstRegisteredIn": "bank-grade reconciliation v1.4.0 — phase 3.5",
-    "bundledIn": "@cross-deck/node@1.12.0"
+    "bundledIn": "@cross-deck/node@1.15.0"
   },
   {
     "id": "verifier-timestamp-mandatory",
@@ -610,6 +611,6 @@ export const BUNDLED_CONTRACTS: readonly Contract[] = Object.freeze([
     ],
     "registeredAt": "2026-05-26",
     "firstRegisteredIn": "bank-grade reconciliation v1.4.0 — phase 7.2",
-    "bundledIn": "@cross-deck/node@1.12.0"
+    "bundledIn": "@cross-deck/node@1.15.0"
   }
 ]) as readonly Contract[];

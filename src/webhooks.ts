@@ -1,22 +1,24 @@
 /**
  * Webhook signature verification — Stripe pattern.
  *
- * **[ROADMAP — v1.4.0 honesty note]:** Crossdeck does NOT yet send
- * outbound webhooks. Outbound delivery (signer + worker + scheduler
- * + dead-letter dashboard) is on the post-v1.5 roadmap. This
- * verifier exists today so customer-side integration code can be
- * written and tested against fixtures (use `signWebhookPayload`
- * to produce signed bodies for your local tests), and so the
- * verification contract surface is locked in BEFORE delivery
- * ships — Phase 7.2 of the bank-grade reconciliation tightened
- * the timestamp-validation footguns here precisely because the
- * helper IS the contract surface for inbound validation,
- * regardless of when first-party delivery lights up.
+ * **Crossdeck sends outbound webhooks.** Delivery is live: the
+ * outbound-event spine (registration + Secret Manager secret custody
+ * + canonical envelope + HMAC signer + at-least-once delivery/retry +
+ * SSRF guard + dead-letter) ships in `backend/src/lib/webhook-backbone.ts`
+ * and its scheduled drainer. The first event types on the wire are
+ * `trust.rule.added` / `trust.rule.removed`; new types ride the same
+ * spine as thin riders, so this verifier covers every one of them.
  *
- * Lets customers verify the events Crossdeck sends to THEM (when
- * delivery ships). Table-stakes for any backend SDK (Stripe ships
+ * Nudge philosophy: a Crossdeck webhook carries the changed key plus a
+ * `reconcile` pointer to the authoritative endpoint — it is a signal to
+ * go read the truth, never the truth itself. Verify the signature, then
+ * (for anything you enforce on) GET the reconcile URL.
+ *
+ * Table-stakes for any backend SDK (Stripe ships
  * `Stripe.webhooks.constructEvent()` from day one, Svix ships
- * `Webhook.verify()` from day one).
+ * `Webhook.verify()` from day one) — Crossdeck ships both the Stripe-exact
+ * `webhooks.constructEvent()` (returns the typed `WebhookEvent` envelope)
+ * and the lower-level `verifyWebhookSignature()` (returns the parsed body).
  *
  * Wire format:
  *   Header `Crossdeck-Signature: t=<unix-seconds>,v1=<hex>`
@@ -26,21 +28,21 @@
  * (one-time reveal at mint time; rotated as needed). Each webhook
  * carries the signature header above. The customer's handler:
  *
- *   import { verifyWebhookSignature } from "@cross-deck/node";
+ *   import { webhooks } from "@cross-deck/node";
  *
  *   app.post("/crossdeck-webhook", express.raw({ type: "application/json" }), (req, res) => {
+ *     let event;
  *     try {
- *       const event = verifyWebhookSignature(
+ *       event = webhooks.constructEvent(
  *         req.body.toString("utf8"),
  *         req.headers["crossdeck-signature"],
  *         process.env.CROSSDECK_WEBHOOK_SECRET,
  *       );
- *       // event is the parsed JSON payload
- *       handleCrossdeckEvent(event);
- *       res.sendStatus(200);
  *     } catch (err) {
- *       res.sendStatus(401);
+ *       return res.sendStatus(401); // signature/replay failure — do NOT act
  *     }
+ *     res.sendStatus(200);          // ACK fast, then reconcile out of band:
+ *     handleCrossdeckEvent(event);  // GET event.reconcile.url for the truth
  *   });
  *
  * The signing scheme is constant-time via `crypto.timingSafeEqual` so
@@ -228,6 +230,76 @@ export function verifyWebhookSignature(
     });
   }
 }
+
+/**
+ * Known outbound event types. Kept as a union of the live types plus an
+ * open `(string & {})` tail so a receiver compiles against a NEW rider
+ * (added server-side) without an SDK bump — you still get autocomplete on
+ * the known ones. Mirrors `WebhookEventType` in the backbone.
+ */
+export type WebhookEventType =
+  | "trust.rule.added"
+  | "trust.rule.removed"
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  | (string & {});
+
+/**
+ * The canonical Crossdeck webhook envelope — identical shape for every
+ * event type (mirror of the backbone's `WebhookEnvelope`). `constructEvent`
+ * returns this, typed; the raw JSON body has exactly these fields.
+ */
+export interface WebhookEvent {
+  /** `evt_…` — use as your idempotency key; the same event may deliver more than once. */
+  id: string;
+  object: "event";
+  type: WebhookEventType;
+  /** Envelope schema version, e.g. `2026-07-01`. Bumped only on a breaking change. */
+  api_version: string;
+  /** Unix seconds when the event was minted. */
+  created: number;
+  /** `true` on a production workspace, `false` on sandbox. */
+  livemode: boolean;
+  /** The changed key(s). A nudge — enough to know WHAT changed, never the full truth. */
+  data: Record<string, unknown>;
+  /** Where the authoritative state lives. GET this to reconcile before you enforce. */
+  reconcile: { method: string; url: string };
+}
+
+/**
+ * Verify a Crossdeck-signed webhook and return the typed {@link WebhookEvent}
+ * envelope — the Stripe-exact API (`stripe.webhooks.constructEvent`). Same
+ * verification as {@link verifyWebhookSignature} (constant-time HMAC,
+ * mandatory replay-tolerance window, secret rotation via an array); the only
+ * difference is the return type is the structured event rather than `unknown`.
+ * Throws the same distinguishable `CrossdeckError` codes on any failure — a
+ * throw means "do NOT act on this request."
+ *
+ *   import { webhooks } from "@cross-deck/node";
+ *   const event = webhooks.constructEvent(rawBody, sigHeader, secret);
+ *   if (event.type === "trust.rule.added") {
+ *     const truth = await fetch(event.reconcile.url).then((r) => r.json());
+ *     // enforce from `truth`, never from `event.data` alone
+ *   }
+ */
+export function constructEvent(
+  payload: string,
+  signatureHeader: string | string[] | undefined,
+  secret: string | string[] | undefined,
+  options: VerifyWebhookOptions = {},
+): WebhookEvent {
+  return verifyWebhookSignature(payload, signatureHeader, secret, options) as WebhookEvent;
+}
+
+/**
+ * Stripe-shaped namespace, mounted on the client as `crossdeck.webhooks` and
+ * exported standalone as `webhooks`. All three members are pure functions —
+ * no client state — so either access style behaves identically.
+ */
+export const webhooks = {
+  constructEvent,
+  verifyWebhookSignature,
+  signWebhookPayload,
+} as const;
 
 /**
  * Pure-function signing — mirror of what the Crossdeck backend does

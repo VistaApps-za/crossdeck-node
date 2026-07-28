@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] — 2026-07-28
+
+**Outbound webhooks are live — receive and verify them with the Stripe-exact `webhooks.constructEvent()`.** Crossdeck now delivers signed, retried, at-least-once webhooks to endpoints you register (first event types: `trust.rule.added` / `trust.rule.removed`; more ride the same spine). This release ships the receiver side:
+
+- **`webhooks.constructEvent(rawBody, signatureHeader, secret, options?)`** — the Stripe-shape API (`stripe.webhooks.constructEvent`). Verifies the signature and returns the typed `WebhookEvent` envelope (`id`, `type`, `api_version`, `created`, `livemode`, `data`, `reconcile`), or throws. Same constant-time HMAC, mandatory replay-tolerance window, and secret-rotation array as `verifyWebhookSignature()` — it just hands back the structured event instead of `unknown`.
+- **Mounted on the client too:** `crossdeck.webhooks.constructEvent(...)` (pure functions, so it's the same object as the standalone `webhooks` export).
+- **New exported types:** `WebhookEvent`, `WebhookEventType` (a union of the live types plus an open tail so a new server-side rider compiles without an SDK bump).
+- **The nudge rule, documented:** the payload carries the changed key plus a `reconcile` pointer — verify, then `GET event.reconcile.url` for the authoritative state and enforce on that. An at-least-once, possibly-reordered delivery is harmless when you reconcile.
+- `verifyWebhookSignature()` / `signWebhookPayload()` are unchanged and still exported. The `[ROADMAP]` disclaimer is gone — delivery ships.
+
 ## [1.14.0] — 2026-07-27
 
 - **`campaignLink()` — stamp an outbound email link so its click binds to the recipient's identity on landing.** You know the recipient's email at send time; pass it with the link's destination and Crossdeck returns the same URL carrying a one-time arrival ticket (`cd_ref`). Put the returned URL in the email (Resend, HubSpot, your own SMTP — any tool). When the recipient clicks and lands on a page running `@cross-deck/web`, the SDK reads the ticket automatically (v1.10.0+) and binds that session to the person, so the post-click journey joins their identity. Server-side only — it mints an identity bind, so it requires a secret key. Degrades honestly: without the web SDK on the landing page the deep session stitch softens, but the server-side email funnel still lands by identity. Wraps `POST /v1/campaign/email-link`.

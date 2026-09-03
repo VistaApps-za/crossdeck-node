@@ -726,6 +726,24 @@ The wire shape is schema-locked at [`contracts/diagnostics/contract-failed-paylo
 
 For per-test-framework hooks see [`contracts/README.md` § Reporting contract failures](https://github.com/VistaApps-za/crossdeck/blob/main/contracts/README.md#reporting-contract-failures-back-to-crossdeck).
 
+## Deploying: the gate must ship in your runtime bundle
+
+<!-- AUTOGEN: content/partials/sdk/node-runtime-bundle-gate.md — edit the partial, not here -->
+`@cross-deck/node` is your server-side gate — entitlements, Crossdeck Trust/blocking, the bouncer at your door. It's imported at server boot and **must be present in the runtime artifact when your server starts.**
+
+**The trap.** Some deploy pipelines assemble a *serving bundle* and copy only the files they think the entry point needs — Firebase App Hosting, Next.js `output: "standalone"`, and esbuild/webpack builds that mark packages `external`. If `@cross-deck/node` isn't traced in, the container boots, the `import` throws `MODULE_NOT_FOUND`, and Node exits **before it listens on its port** — the deploy fails its health check and the site never goes live.
+
+**Never make the import optional to "fix" it.** A `try/catch`, a lazy import, or marking it optional makes the crash vanish and silently ships a server with **no gate**: entitlements unresolved, blocked users let in, Trust off. A crash is loud and safe; a disabled gate is invisible and worse. The SDK has **zero runtime dependencies**, so there is never a bundling reason to drop it.
+
+**The fix — guarantee it ships in the runtime artifact:**
+
+- **Firebase App Hosting / a custom `server.mjs`:** bundle `@cross-deck/node` *into* the server artifact (e.g. esbuild without listing it in `external`) so it is self-contained when Cloud Run starts.
+- **Next.js (`standalone`):** add `@cross-deck/node` to `serverExternalPackages` so it is copied into the standalone output instead of being bundled-and-broken.
+- **esbuild / webpack:** do **not** put `@cross-deck/node` in `external`; let it bundle in (zero deps — it bundles cleanly).
+- **Verify** `node_modules/@cross-deck/node` is present in the deployed image (or inlined into the server file) **before** you cut traffic over.
+
+The rule: **the gate ships with the server, or the server doesn't ship.**
+
 ## Node version
 
 Node 18+. Uses the platform `fetch` and `node:crypto` — zero runtime dependencies.

@@ -10,11 +10,11 @@ discloses the problem to everyone before there is a fix.
 
 ## Scope
 
-This policy covers this repository and anything published from it. For how Crossdeck handles
-keys, access and customer data across the platform, see the
+This policy covers this package and the repository it is published from. For how Crossdeck
+handles keys, access and customer data across the platform, see the
 [security overview](https://cross-deck.com/legal/security/).
 
-Implementation details for this package are documented in the
+Implementation details are documented in the
 [developer documentation](https://cross-deck.com/docs/node-sdk/).
 
 ## Supported versions

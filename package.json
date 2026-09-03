@@ -1,12 +1,15 @@
 {
   "name": "@cross-deck/node",
-  "version": "1.15.0",
+  "version": "1.15.1",
   "description": "Crossdeck server SDK for Node.js — verified subscriptions, entitlements, server-side error capture, and product telemetry in one client.",
   "license": "MIT",
-  "homepage": "https://cross-deck.com",
+  "homepage": "https://cross-deck.com/docs/node-sdk/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Crossdeckhq/crossdeck-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Crossdeckhq/crossdeck-node/issues"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",

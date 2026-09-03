@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.15.1] - 2026-09-03
+
+### Changed
+
+- Package metadata: `homepage` now points at this package's own documentation page rather
+  than the marketing homepage, `repository.url` normalised to the `git+https` form npm
+  expects, and an explicit `bugs` URL added. npmjs.com renders these as links, so they are
+  how a reader gets from the package page to the docs.
+- Added `SECURITY.md` so a vulnerability has a private reporting route
+  (security@cross-deck.com) instead of a public issue.
+
+No runtime or API changes.
+
 All notable changes to `@cross-deck/node` will be documented here. The
 format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
